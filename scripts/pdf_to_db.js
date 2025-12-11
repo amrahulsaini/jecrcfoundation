@@ -2,7 +2,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
-const pdfjsLib = require('pdfjs-dist');
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 
 const PDF_DIR = path.join(__dirname, 'app', 'allpdfs');
 const IMAGE_DIR = path.join(__dirname, 'public', 'images');
