@@ -50,54 +50,121 @@ async function extractImagesFromPDF(pdfPath, fileBaseName) {
 }
 
 function parseStudentData(text) {
-  const fields = {
-    applicant_name: /Applicant Name:\s*(.+)/i,
-    father_name: /Father Name:\s*(.+)/i,
-    mother_name: /Mother Name:\s*(.+)/i,
-    gender: /Gender:\s*(.+)/i,
-    dob: /Date of Birth:\s*(.+)/i,
-    status: /Status:\s*(.+)/i,
-    caste: /Caste:\s*(.+)/i,
-    category1: /Category1:\s*(.+)/i,
-    category3: /Category3:\s*(.+)/i,
-    specialization: /Specialization:\s*(.+)/i,
-    admission_status: /Admission Status:\s*(.+)/i,
-    permanent_address: /Permanent Address:\s*(.+)/i,
-    earlier_enrollment_no: /Earlier Enrollment No:\s*(.+)/i,
-    corr_address: /Correspondence Address:\s*(.+)/i,
-    mobile_no: /Mobile No:\s*(.+)/i,
-    parent_mobile_no: /Parent Mobile No:\s*(.+)/i,
-    entrance_exam_roll_no: /Entrance Exam Roll No:\s*(.+)/i,
-    entrance_exam_name: /Entrance Exam Name:\s*(.+)/i,
-    merit_secured: /Merit Secured:\s*(.+)/i,
-    email: /Email:\s*(.+)/i,
-    adhar_no: /Aadhaar No:\s*(.+)/i,
-    college_shift: /College Shift:\s*(.+)/i,
-    ssc_roll_no: /SSC Roll No:\s*(.+)/i,
-    ssc_year: /SSC Year:\s*(.+)/i,
-    ssc_stream: /SSC Stream:\s*(.+)/i,
-    ssc_board: /SSC Board:\s*(.+)/i,
-    ssc_obt_marks: /SSC Obtained Marks:\s*(.+)/i,
-    ssc_max_marks: /SSC Max Marks:\s*(.+)/i,
-    ssc_percentage: /SSC Percentage:\s*(.+)/i,
-    ssc_cgpa: /SSC CGPA:\s*(.+)/i,
-    ssc_result: /SSC Result:\s*(.+)/i,
-    hsc_roll_no: /HSC Roll No:\s*(.+)/i,
-    hsc_year: /HSC Year:\s*(.+)/i,
-    hsc_stream: /HSC Stream:\s*(.+)/i,
-    hsc_board: /HSC Board:\s*(.+)/i,
-    hsc_obt_marks: /HSC Obtained Marks:\s*(.+)/i,
-    hsc_max_marks: /HSC Max Marks:\s*(.+)/i,
-    hsc_percentage: /HSC Percentage:\s*(.+)/i,
-    hsc_cgpa: /HSC CGPA:\s*(.+)/i,
-    hsc_result: /HSC Result:\s*(.+)/i,
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    // Fallback to regex if not JSON
+    const fields = {
+      applicant_name: /applicant_name_in_english:\s*(.+)/i,
+      father_name: /father_name_in_english:\s*(.+)/i,
+      mother_name: /mother_name_in_english:\s*(.+)/i,
+      gender: /gender:\s*(.+)/i,
+      dob: /date_of_birth:\s*(.+)/i,
+      status: /status:\s*(.+)/i,
+      caste: /caste:\s*(.+)/i,
+      category1: /category_i_and_ii:\s*(.+)/i,
+      category3: /category_iii:\s*(.+)/i,
+      specialization: /specialization_branch:\s*(.+)/i,
+      admission_status: /admission_status:\s*(.+)/i,
+      permanent_address: /permanent_address:\s*(.+)/i,
+      earlier_enrollment_no: /earlier_enrollment_no:\s*(.+)/i,
+      corr_address: /corr_address:\s*(.+)/i,
+      mobile_no: /student_mobile_no:\s*(.+)/i,
+      parent_mobile_no: /parent_mobile_no:\s*(.+)/i,
+      entrance_exam_roll_no: /entrance_exam_roll_no:\s*(.+)/i,
+      entrance_exam_name: /entrance_exam_name:\s*(.+)/i,
+      merit_secured: /merit_secured:\s*(.+)/i,
+      email: /student_email:\s*(.+)/i,
+      adhar_no: /aadhar_no:\s*(.+)/i,
+      college_shift: /college_shift:\s*(.+)/i,
+    };
+
+    data = {};
+    for (const [key, regex] of Object.entries(fields)) {
+      const match = text.match(regex);
+      data[key] = match ? match[1].trim() : null;
+    }
+
+    // Parse education
+    const educationMatch = text.match(/education:\s*\[([\s\S]*?)\]/i);
+    if (educationMatch) {
+      try {
+        const education = JSON.parse(`[${educationMatch[1]}]`);
+        if (education.length > 0) {
+          const ssc = education[0];
+          data.ssc_roll_no = ssc.roll_no;
+          data.ssc_year = ssc.year;
+          data.ssc_stream = ssc.stream;
+          data.ssc_board = ssc.board;
+          data.ssc_obt_marks = ssc.obtained_marks;
+          data.ssc_max_marks = ssc.max_marks;
+          data.ssc_percentage = ssc.percentage;
+          data.ssc_cgpa = ssc.cgpa;
+          data.ssc_result = ssc.result;
+        }
+        if (education.length > 1) {
+          const hsc = education[1];
+          data.hsc_roll_no = hsc.roll_no;
+          data.hsc_year = hsc.year;
+          data.hsc_stream = hsc.stream;
+          data.hsc_board = hsc.board;
+          data.hsc_obt_marks = hsc.obtained_marks;
+          data.hsc_max_marks = hsc.max_marks;
+          data.hsc_percentage = hsc.percentage;
+          data.hsc_cgpa = hsc.cgpa;
+          data.hsc_result = hsc.result;
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }
+  }
+
+  // Map to database fields
+  const parsed = {
+    applicant_name: data.applicant_name_in_english || data.applicant_name,
+    father_name: data.father_name_in_english || data.father_name,
+    mother_name: data.mother_name_in_english || data.mother_name,
+    gender: data.gender,
+    dob: data.date_of_birth || data.dob,
+    status: data.status,
+    caste: data.caste,
+    category1: data.category_i_and_ii || data.category1,
+    category3: data.category_iii || data.category3,
+    specialization: data.specialization_branch || data.specialization,
+    admission_status: data.admission_status,
+    permanent_address: data.permanent_address,
+    earlier_enrollment_no: data.earlier_enrollment_no,
+    corr_address: data.corr_address,
+    mobile_no: data.student_mobile_no || data.mobile_no,
+    parent_mobile_no: data.parent_mobile_no,
+    entrance_exam_roll_no: data.entrance_exam_roll_no,
+    entrance_exam_name: data.entrance_exam_name,
+    merit_secured: data.merit_secured,
+    email: data.student_email || data.email,
+    adhar_no: data.aadhar_no || data.adhar_no,
+    college_shift: data.college_shift,
+    ssc_roll_no: data.ssc_roll_no,
+    ssc_year: data.ssc_year,
+    ssc_stream: data.ssc_stream,
+    ssc_board: data.ssc_board,
+    ssc_obt_marks: data.ssc_obt_marks,
+    ssc_max_marks: data.ssc_max_marks,
+    ssc_percentage: data.ssc_percentage,
+    ssc_cgpa: data.ssc_cgpa,
+    ssc_result: data.ssc_result,
+    hsc_roll_no: data.hsc_roll_no,
+    hsc_year: data.hsc_year,
+    hsc_stream: data.hsc_stream,
+    hsc_board: data.hsc_board,
+    hsc_obt_marks: data.hsc_obt_marks,
+    hsc_max_marks: data.hsc_max_marks,
+    hsc_percentage: data.hsc_percentage,
+    hsc_cgpa: data.hsc_cgpa,
+    hsc_result: data.hsc_result,
   };
 
-  const parsed = {};
-  for (const [key, regex] of Object.entries(fields)) {
-    const match = text.match(regex);
-    parsed[key] = match ? match[1].trim() : null;
-  }
   return parsed;
 }
 
@@ -122,10 +189,9 @@ async function main() {
     const { imagePath, signPath } = await extractImagesFromPDF(pdfPath, fileBaseName);
 
     await db.execute(
-      `INSERT INTO \`2529master\` VALUES (${Array(43).fill('?').join(',')})`,
+      `INSERT INTO \`2529master\` VALUES (${Array(42).fill('?').join(',')})`,
       [
         null, // id
-        null, // extra
         studentData.applicant_name,
         studentData.father_name,
         studentData.mother_name,
