@@ -165,6 +165,11 @@ function parseStudentData(text) {
     hsc_result: data.hsc_result,
   };
 
+  // Ensure no undefined values
+  for (const key in parsed) {
+    if (parsed[key] === undefined) parsed[key] = null;
+  }
+
   return parsed;
 }
 
