@@ -122,9 +122,10 @@ async function main() {
     const { imagePath, signPath } = await extractImagesFromPDF(pdfPath, fileBaseName);
 
     await db.execute(
-      `INSERT INTO \`2529master\` (id, applicant_name, father_name, mother_name, gender, dob, status, caste, category1, category3, specialization, admission_status, permanent_address, earlier_enrollment_no, corr_address, mobile_no, parent_mobile_no, entrance_exam_roll_no, entrance_exam_name, merit_secured, email, adhar_no, college_shift, ssc_roll_no, ssc_year, ssc_stream, ssc_board, ssc_obt_marks, ssc_max_marks, ssc_percentage, ssc_cgpa, ssc_result, hsc_roll_no, hsc_year, hsc_stream, hsc_board, hsc_obt_marks, hsc_max_marks, hsc_percentage, hsc_cgpa, hsc_result, image_path, sign_path) VALUES (${Array(42).fill('?').join(',')})`,
+      `INSERT INTO \`2529master\` VALUES (${Array(43).fill('?').join(',')})`,
       [
         null, // id
+        null, // extra
         studentData.applicant_name,
         studentData.father_name,
         studentData.mother_name,
